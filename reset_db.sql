@@ -1,0 +1,2 @@
+DROP DATABASE IF EXISTS `cm-app-db`;
+CREATE DATABASE `cm-app-db`;
