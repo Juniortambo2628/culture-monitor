@@ -15,14 +15,30 @@ class PollController extends Controller
         return response()->json(Poll::with('organization')->latest()->get());
     }
 
-    public function getOrganizations()
+    public function show(Poll $poll)
     {
-        return response()->json(Organization::all());
+        return response()->json($poll->load(['organization', 'questions.factor']));
     }
 
-    public function getFactors()
+    public function update(Request $request, Poll $poll)
     {
-        return response()->json(Factor::all());
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'organization_id' => 'required|exists:organizations,id',
+            'year' => 'required|integer',
+            'quarter' => 'required|integer|min:1|max:4',
+            'status' => 'required|string',
+        ]);
+
+        $poll->update($validated);
+        return response()->json($poll);
+    }
+
+    public function destroy(Poll $poll)
+    {
+        $poll->delete();
+        return response()->json(['message' => 'Poll deleted successfully']);
     }
 
     public function storeElaborate(Request $request)
