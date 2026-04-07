@@ -8,9 +8,23 @@ use Illuminate\Http\Request;
 
 class OrganizationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(Organization::latest()->get());
+        $user = $request->user();
+        
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
+        if ($user->role === 'admin') {
+            return response()->json(Organization::latest()->get());
+        }
+
+        if ($user->organization_id && $user->organization) {
+            return response()->json([$user->organization]);
+        }
+
+        return response()->json([]);
     }
 
     public function store(Request $request)

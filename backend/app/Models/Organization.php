@@ -12,4 +12,9 @@ class Organization extends Model
     {
         return $this->hasMany(Poll::class);
     }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }

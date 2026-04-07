@@ -47,6 +47,7 @@ class CultureMonitorSeeder extends Seeder
                     'email' => Str::slug($org->name) . "_user_" . $i . "@example.com",
                     'password' => Hash::make('password'),
                     'role' => 'participant',
+                    'organization_id' => $org->id,
                 ]);
 
                 Profile::create([
@@ -61,7 +62,7 @@ class CultureMonitorSeeder extends Seeder
             }
         }
 
-        // 4. Create Polls & Questions & Responses for Org #1 (Trend Data)
+        // 4. Create CLOSED Polls & Questions & Responses for Org #1 (Trend Data)
         $org1 = $orgs[0];
         $orgUsers = User::whereRaw('email LIKE ?', [Str::slug($org1->name) . "%"])->get();
 
@@ -107,13 +108,114 @@ class CultureMonitorSeeder extends Seeder
                 ]);
             }
         }
+
+        // 5. Create an ACTIVE poll for 2026 Q2 (for the live survey flow)
+        $activePoll = Poll::create([
+            'title' => '2026 Q2 Strategic Culture Pulse',
+            'description' => 'Your feedback on cross-departmental agility, innovation capacity, and decision-making speed is requested for the Q2 calibration cycle.',
+            'status' => 'active',
+            'organization_id' => $org1->id,
+            'year' => 2026,
+            'quarter' => 2
+        ]);
+
+        // Create questions for the active poll — 2 per factor
+        $questionTemplates = [
+            'Alignment' => [
+                'How strongly do you feel connected to the company\'s core mission and values?',
+                'To what extent do leadership decisions align with the stated organizational strategy?'
+            ],
+            'Agility' => [
+                'How quickly does your team adapt to changing priorities or market conditions?',
+                'How well does the organization respond to unexpected disruptions?'
+            ],
+            'Execution' => [
+                'How effectively does your team convert plans into measurable outcomes?',
+                'To what extent are performance expectations clear and consistently communicated?'
+            ],
+            'Innovation' => [
+                'How encouraged do you feel to propose new ideas or challenge the status quo?',
+                'How well does the organization support experimentation and creative risk-taking?'
+            ],
+            'Collaboration' => [
+                'How effectively do teams across different departments work together?',
+                'To what extent does your team emphasize collaborative problem-solving?'
+            ],
+            'Trust' => [
+                'How comfortable are you providing honest feedback to your leadership?',
+                'To what degree do you trust that the organization acts in the best interest of its employees?'
+            ],
+        ];
+
+        foreach ($factors as $factor) {
+            $templates = $questionTemplates[$factor->name] ?? [];
+            foreach ($templates as $templateText) {
+                Question::create([
+                    'poll_id' => $activePoll->id,
+                    'factor_id' => $factor->id,
+                    'text' => $templateText,
+                    'weight' => 1.0
+                ]);
+            }
+        }
+
+        // 6. Create a draft poll for distribution testing
+        $draftPoll = Poll::create([
+            'title' => '2026 Q3 Innovation Deep-Dive',
+            'description' => 'Focused assessment on innovation and creative capacity across organizational segments.',
+            'status' => 'draft',
+            'organization_id' => $orgs[1]->id,
+            'year' => 2026,
+            'quarter' => 3
+        ]);
+
+        foreach (['Innovation', 'Agility'] as $factorName) {
+            $factor = collect($factors)->firstWhere('name', $factorName);
+            if ($factor) {
+                Question::create([
+                    'poll_id' => $draftPoll->id,
+                    'factor_id' => $factor->id,
+                    'text' => "How strongly does {$factorName} manifest in your day-to-day work?",
+                    'weight' => 1.0
+                ]);
+            }
+        }
         
-        // Add a "Benchmark" Admin User
-        User::create([
+        // 7. Add Admin User
+        $admin = User::create([
             'name' => 'Admin User',
             'email' => 'admin@culturemonitor.com',
             'password' => Hash::make('password'),
             'role' => 'admin'
+        ]);
+
+        Profile::create([
+            'user_id' => $admin->id,
+            'department' => 'Executive',
+            'location' => 'Head Office',
+            'role' => 'System Administrator',
+            'job_level' => 'Executive',
+            'gender' => 'Male',
+            'generation' => 'Millennial'
+        ]);
+
+        // 8. Add a Named Test Participant 
+        $testUser = User::create([
+            'name' => 'Kevin Tambo',
+            'email' => 'kevin@culturemonitor.com',
+            'password' => Hash::make('password'),
+            'role' => 'participant',
+            'organization_id' => $orgs[0]->id,
+        ]);
+
+        Profile::create([
+            'user_id' => $testUser->id,
+            'department' => 'Engineering',
+            'location' => 'Head Office',
+            'role' => 'Employee',
+            'job_level' => 'Individual Contributor',
+            'gender' => 'Male',
+            'generation' => 'Gen Z'
         ]);
     }
 }

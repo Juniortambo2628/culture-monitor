@@ -14,16 +14,34 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email|max:255',
             'password' => 'required|string|min:8',
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'participant', // default role
-        ]);
+        $user = User::where('email', $request->email)->first();
+
+        if ($user) {
+            if ($user->is_provisioned) {
+                // Claim it
+                $user->update([
+                    'name' => $request->name,
+                    'password' => Hash::make($request->password),
+                    'is_provisioned' => false,
+                ]);
+            } else {
+                throw ValidationException::withMessages([
+                    'email' => ['The email has already been taken.'],
+                ]);
+            }
+        } else {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'participant', 
+                'is_provisioned' => false,
+            ]);
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'organization_id',
+        'is_provisioned',
     ];
 
     /**
@@ -46,6 +48,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_provisioned' => 'boolean',
         ];
     }
 
@@ -57,5 +60,10 @@ class User extends Authenticatable
     public function responses()
     {
         return $this->hasMany(Response::class);
+    }
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
     }
 }
